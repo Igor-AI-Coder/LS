@@ -1,47 +1,72 @@
-class Exams {
-    /**O this permite que os métodos acessem e modifiquem as propriedades do objeto
-     * ANOTAÇÃO PARA GUARDAR NA MENTE!!!
-     */
-    constructor() {
-        this.questoes = [];
+class Answer {
+    constructor(value) {
+        this.value = value;
     }
 
-    addQuestao(numero, peso, respostaCorreta) {
-        this.questoes.push({numero, peso, respostaCorreta});
+    isCorrect(other) {
+        return other instanceof Answer
+            ? this.value === other.value
+            : this.value === other;
+    }
+}
+class Exam {
+    constructor(answer, weight) {
+        this.answer = answer;
+        this.weight = weight;  
+        this.exams = [];
     }
 
-    calcularNota(respostasAluno) {
-        let total = 0;
-        let certas = 0;
-
-        for (const q of this.questoes) {
-            total += q.peso;
-            if (respostasAluno[q.numero] === q.respostaCorreta) {
-                certas += q.peso;
-            }
+    add(exam) {
+        if (!(exam instanceof Answer)) {
+            throw new Error("O argumento deve ser uma instância de Answer.");
         }
-        return (certas / total) * 10;
+        this.exams.push(exam);
+    }
+
+    avg() {
+        if (this.exams.length === 0) return 0;
+        const total = this.exams.length * this.weight;
+        const correct = this.exams.filter(e => this.answer.isCorrect(e)).length * this.weight;
+        return (correct / total) * 10;
+    }
+
+    _scores() {
+        return this.exams.map(e => this.answer.isCorrect(e) ? this.weight : 0);
+    }
+
+    min(count = this.exams.length) {
+        return this._scores().sort((a, b) => a - b).slice(0, count);
+    }
+
+    max(count = this.exams.length) {
+        return this._scores().sort((a, b) => b - a).slice(0, count);
+    }
+
+    lt(limit) {
+        return this._scores().filter(score => score < limit);
+    }
+
+    gt(limit) {
+        return this._scores().filter(score => score > limit);
     }
 }
 
-const prova = new Exams();
+const questoes = [
+    new Exam(new Answer('a'), 2),
+    new Exam(new Answer('b'), 2),
+    new Exam(new Answer('a'), 2),
+    new Exam(new Answer('c'), 2),
+    new Exam(new Answer('d'), 2)
+];
 
-prova.addQuestao(2, 2, 'b');
-prova.addQuestao(3, 2, 'a');
-prova.addQuestao(4, 2, 'c');
-prova.addQuestao(5, 2, 'd');
-prova.addQuestao(1, 2, 'a');
+const respostasAluno = ['a', 'b', 'b', 'b', 'b'];
 
-const respostasAluno = {
-    1: 'a',
-    2: 'b',
-    3: 'b',
-    4: 'b',
-    5: 'b'
-};
+for (let i = 0; i < questoes.length; i++) {
+    questoes[i].add(new Answer(respostasAluno[i]));
+}
 
-/**toFixed retorna a string em um número em um ponto denominado 
- * ANOTAÇÃO PARA GUARDAR NA MENTE!!!
-*/
-const nota = prova.calcularNota(respostasAluno);
-console.log(`Nota: ${nota.toFixed(1)}`);
+let notaFinal = 0;
+for (const q of questoes) {
+    notaFinal += q.avg() * (q.weight / 10);
+}
+console.log(`Nota final: ${notaFinal.toFixed(1)}`); // Esperado: 4.0
